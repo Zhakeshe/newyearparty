@@ -10,6 +10,7 @@ import {
 } from "react";
 import { students as seedStudents } from "@/data/students";
 import { formatTicketNumber, generateQrToken } from "@/lib/students";
+import { safeRandomId } from "@/lib/utils";
 import { TicketStatus, TicketStudent } from "@/lib/types";
 
 type AddInput = { fullName: string; className: string; curator: string };
@@ -76,7 +77,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     const qrToken = generateQrToken(fullName, nextNumber);
 
     const newStudent: TicketStudent = {
-      id: crypto.randomUUID(),
+      id: safeRandomId("student"),
       fullName,
       className,
       curator,

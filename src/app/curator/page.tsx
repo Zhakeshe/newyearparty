@@ -1,18 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Eye, Link as LinkIcon, Pencil, QrCode, Share2, Trash2, Users } from "lucide-react";
+import { Copy, Eye, Link as LinkIcon, LogOut, Pencil, QrCode, Share2, Trash2, Users } from "lucide-react";
 import { formatTicketNumber } from "@/lib/students";
 import { TicketStatus } from "@/lib/types";
 import { useStudentStore } from "@/components/student-provider";
-
-const CURATOR_NAME = "Меруерт";
+import { useAuth } from "@/components/auth-provider";
 
 export default function CuratorPage() {
   const { students, addStudent, updateStudent, deleteStudent } = useStudentStore();
+  const { user, loginCurator, logout, curators } = useAuth();
+  const [authLogin, setAuthLogin] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const curatorName = useMemo(() => curators.find((c) => c.login === user?.login)?.name ?? user?.name, [curators, user]);
   const myStudents = useMemo(
-    () => students.filter((s) => s.curator.toLowerCase() === CURATOR_NAME.toLowerCase()),
-    [students]
+    () => students.filter((s) => curatorName && s.curator.toLowerCase() === curatorName.toLowerCase()),
+    [students, curatorName]
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
@@ -36,11 +40,12 @@ export default function CuratorPage() {
   };
 
   const submitStudent = () => {
+    if (!curatorName) return;
     if (editingId) {
       updateStudent(editingId, { fullName: formName, className: formClass });
       setEditingId(null);
     } else {
-      const created = addStudent({ fullName: formName, className: formClass, curator: CURATOR_NAME });
+      const created = addStudent({ fullName: formName, className: formClass, curator: curatorName });
       if (!created) return;
     }
     setFormName("");
@@ -55,16 +60,60 @@ export default function CuratorPage() {
     setFormClass(student.className);
   };
 
+  const handleLogin = () => {
+    const ok = loginCurator(authLogin, authPassword);
+    setAuthError(ok ? null : "Логин немесе пароль қате");
+  };
+
+  if (!user || user.role !== "CURATOR") {
+    return (
+      <main className="px-6 py-16 md:px-10 flex justify-center">
+        <div className="glass-panel rounded-3xl p-8 max-w-md w-full space-y-4 border border-white/10">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Curator login</p>
+          <h1 className="text-3xl font-heading font-semibold">Кураторға кіру</h1>
+          <div className="space-y-3">
+            <input
+              value={authLogin}
+              onChange={(e) => setAuthLogin(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Логин"
+            />
+            <input
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Пароль"
+              type="password"
+            />
+            <button
+              onClick={handleLogin}
+              className="w-full rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+            >
+              Кіру
+            </button>
+            {authError && <p className="text-error text-sm text-center">{authError}</p>}
+            <p className="text-xs text-center text-slate-400">Логин/пароль админ панельден беріледі</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="px-6 py-10 md:px-10 space-y-8 max-w-6xl mx-auto">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Curator panel</p>
-          <h1 className="text-3xl font-heading font-semibold">{CURATOR_NAME} — оқушылар</h1>
+          <h1 className="text-3xl font-heading font-semibold">{curatorName} — оқушылар</h1>
           <p className="text-slate-400 text-sm">QR және ссылка арқылы билетпен бөлісу</p>
         </div>
-        <div className="badge bg-success/20 text-success border border-success/30 inline-flex items-center gap-2">
-          <Users size={16} /> {myStudents.length} оқушы
+        <div className="flex items-center gap-2">
+          <div className="badge bg-success/20 text-success border border-success/30 inline-flex items-center gap-2">
+            <Users size={16} /> {myStudents.length} оқушы
+          </div>
+          <button className="inline-flex items-center gap-2 text-slate-300 hover:text-white" onClick={logout}>
+            <LogOut size={16} /> Шығу
+          </button>
         </div>
       </header>
 
