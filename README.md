@@ -23,6 +23,33 @@ Premium dark-mode билет жүйесі: QR билеттер, Curator share, A
 
 > Demo деректер `src/data/students.ts` ішінде. Scanner бетінде qrToken ретінде сол мәндерді қолданыңыз.
 
+## PostgreSQL + Prisma толық орнату
+Prisma v5 (repo-да бекітілген) қолданады. Егер npx арқылы v7 орнатсаңыз, `datasource url` қателігін аласыз. Сондықтан алдымен жобадағы тәуелділіктерді орнатыңыз немесе тікелей `npx prisma@5.19.1 ...` командасын пайдаланыңыз.
+
+1. **Дерекқорды дайындау**
+   - Жергілікті PostgreSQL: `docker run --name newyearparty-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=newyearparty -p 5432:5432 -d postgres:16`
+   - Немесе кез келген дайын PostgreSQL instance қолданыңыз.
+
+2. **.env құру**
+   - `.env.example` файлын көшіріңіз: `cp .env.example .env`
+   - `DATABASE_URL` мәнін өз дерекқорыңызға сәйкестендіріңіз (формат: `postgresql://USER:PASSWORD@HOST:PORT/DB?schema=public`).
+
+3. **Тәуелділіктерді орнату (Prisma v5 алу үшін)**
+   - `npm install`
+   - Егер желі болмай қалса және `npx prisma migrate dev` v7 сұраса, нұсқаны күштеп көрсетіңіз: `npx prisma@5.19.1 migrate dev --name init --schema prisma/schema.prisma`
+
+4. **Миграция және клиент генерациясы**
+   - `npx prisma migrate dev --name init` — кестелерді құрады
+   - `npx prisma generate` — Prisma Client шығарады
+
+5. **Тексеру / деректер көру** (қалауыңыз бойынша)
+   - `npx prisma studio` — кестелерді браузерде көру
+
+6. **Қосымшаны іске қосу**
+   - `npm run dev` және http://localhost:3000 адресіне кіріңіз
+
+> Пайдалы: басқа Prisma нұсқасын қолданғыңыз келсе, жаңа конфигурация (Prisma 7) үшін `prisma.config.ts` пайдаланып datasource URL беру керек. Осы репо ішінде v5 қолданылады, сондықтан жоғарыдағы командаларды сақтаңыз.
+
 ## Design highlights
 - Primary `#4F46E5`, Secondary `#9333EA`, Success `#22C55E`, Error `#EF4444`
 - Glass cards, hover glow, badge стилі
