@@ -56,7 +56,9 @@ export function StudentProvider({ children }: { children: React.ReactNode }) {
 
   const stats = useMemo(() => {
     const total = students.length;
-    const entered = students.filter((s) => s.status === TicketStatus.ENTERED).length;
+    const entered = students.filter(
+      (s) => s.status === TicketStatus.ENTERED
+    ).length;
     return { total, entered, notEntered: total - entered };
   }, [students]);
 
