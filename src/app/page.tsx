@@ -1,4 +1,5 @@
-import { ArrowRight, Gauge, KeyRound, LayoutDashboard, QrCode, Ticket } from "lucide-react";
+"use client";
+import { ArrowRight, Gauge, QrCode, Ticket } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { getStats, listEntered } from "@/lib/students";
