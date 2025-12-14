@@ -1,15 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Eye, Link as LinkIcon, QrCode, Share2, Users } from "lucide-react";
-import { listByCurator, formatTicketNumber } from "@/lib/students";
+import { Copy, Eye, Link as LinkIcon, Pencil, QrCode, Share2, Trash2, Users } from "lucide-react";
+import { formatTicketNumber } from "@/lib/students";
 import { TicketStatus } from "@/lib/types";
+import { useStudentStore } from "@/components/student-provider";
 
 const CURATOR_NAME = "Меруерт";
 
 export default function CuratorPage() {
-  const myStudents = useMemo(() => listByCurator(CURATOR_NAME), []);
+  const { students, addStudent, updateStudent, deleteStudent } = useStudentStore();
+  const myStudents = useMemo(
+    () => students.filter((s) => s.curator.toLowerCase() === CURATOR_NAME.toLowerCase()),
+    [students]
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formClass, setFormClass] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const copyLink = async (token: string, studentId: string) => {
     const url = `${window.location.origin}/ticket/${token}`;
@@ -27,6 +35,26 @@ export default function CuratorPage() {
     }
   };
 
+  const submitStudent = () => {
+    if (editingId) {
+      updateStudent(editingId, { fullName: formName, className: formClass });
+      setEditingId(null);
+    } else {
+      const created = addStudent({ fullName: formName, className: formClass, curator: CURATOR_NAME });
+      if (!created) return;
+    }
+    setFormName("");
+    setFormClass("");
+  };
+
+  const startEdit = (id: string) => {
+    const student = myStudents.find((s) => s.id === id);
+    if (!student) return;
+    setEditingId(id);
+    setFormName(student.fullName);
+    setFormClass(student.className);
+  };
+
   return (
     <main className="px-6 py-10 md:px-10 space-y-8 max-w-6xl mx-auto">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -39,6 +67,30 @@ export default function CuratorPage() {
           <Users size={16} /> {myStudents.length} оқушы
         </div>
       </header>
+
+      <div className="glass-panel rounded-3xl p-5 border border-white/10 space-y-3">
+        <p className="text-sm text-slate-400">Өз оқушыларыңызды қосыңыз</p>
+        <div className="grid md:grid-cols-3 gap-3">
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="ФИО"
+          />
+          <input
+            value={formClass}
+            onChange={(e) => setFormClass(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="Сынып"
+          />
+          <button
+            onClick={submitStudent}
+            className="rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+          >
+            {editingId ? "Сақтау" : "Қосу"}
+          </button>
+        </div>
+      </div>
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {myStudents.map((student) => (
@@ -83,6 +135,20 @@ export default function CuratorPage() {
               >
                 <QrCode size={16} />
               </a>
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => startEdit(student.id)}
+                title="Өңдеу"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => deleteStudent(student.id)}
+                title="Өшіру"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
             {copiedId === student.id && (
               <div className="text-xs text-success text-center flex items-center gap-1 justify-center">

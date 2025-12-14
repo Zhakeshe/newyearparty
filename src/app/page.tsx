@@ -1,12 +1,15 @@
+"use client";
+
 import { ArrowRight, Gauge, KeyRound, LayoutDashboard, QrCode, Ticket } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getStats, listEntered } from "@/lib/students";
 import { StudentTable } from "@/components/StudentTable";
+import { useStudentStore } from "@/components/student-provider";
+import { TicketStatus } from "@/lib/types";
 
 export default function Home() {
-  const stats = getStats();
-  const students = listEntered();
+  const { stats, students } = useStudentStore();
+  const entered = students.filter((s) => s.status === TicketStatus.ENTERED);
 
   return (
     <main className="px-6 py-10 md:px-10 space-y-8">
@@ -70,7 +73,7 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <StudentTable students={students} />
+        <StudentTable students={entered} />
         <div className="text-sm text-slate-400 flex items-center gap-2">
           <ArrowRight size={14} /> Қалған оқушылар админ/куратор панельде басқарылады
         </div>

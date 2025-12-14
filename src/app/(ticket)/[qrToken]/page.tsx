@@ -1,24 +1,43 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { getStudentByToken, formatTicketNumber } from "@/lib/students";
+import { useParams } from "next/navigation";
+import { formatTicketNumber } from "@/lib/students";
 import { TicketStatus } from "@/lib/types";
 import { TicketActions } from "@/components/ticket-actions";
+import { useStudentStore } from "@/components/student-provider";
 
-async function generateQrDataUrl(token: string) {
-  const url = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://example.com"}/ticket/${token}`;
-  return QRCode.toDataURL(url, { margin: 2, color: { dark: "#0F172A", light: "#ffffff" } });
-}
+export default function TicketPage() {
+  const params = useParams<{ qrToken: string }>();
+  const { students } = useStudentStore();
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-export default async function TicketPage({ params }: { params: { qrToken: string } }) {
-  const student = getStudentByToken(params.qrToken);
+  const student = useMemo(
+    () => students.find((s) => s.qrToken.toLowerCase() === params.qrToken.toLowerCase()),
+    [students, params.qrToken]
+  );
+
+  useEffect(() => {
+    if (!student) return;
+    const url = `${window.location.origin}/ticket/${student.qrToken}`;
+    QRCode.toDataURL(url, { margin: 2, color: { dark: "#0F172A", light: "#ffffff" } }).then(setQrDataUrl);
+  }, [student]);
+
   if (!student) {
-    notFound();
+    return (
+      <main className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="glass-panel max-w-md w-full rounded-3xl border border-white/10 p-8 text-center space-y-3">
+          <p className="text-sm text-slate-400">Ticket табылмады</p>
+          <p className="text-lg font-heading">QR дұрыс емес</p>
+        </div>
+      </main>
+    );
   }
 
-  const qrDataUrl = await generateQrDataUrl(student.qrToken);
   const ticketNumber = formatTicketNumber(student.ticketNumber);
-  const linkUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/ticket/${student.qrToken}`;
+  const linkUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/ticket/${student.qrToken}`;
 
   return (
     <main className="flex items-center justify-center min-h-screen px-4 py-12">
@@ -37,15 +56,19 @@ export default async function TicketPage({ params }: { params: { qrToken: string
 
         <div className="flex flex-col items-center gap-3">
           <div className="bg-white rounded-2xl p-4 shadow-xl">
-            <Image
-              src={qrDataUrl}
-              alt="Ticket QR"
-              className="h-64 w-64 object-contain"
-              width={256}
-              height={256}
-              priority
-              unoptimized
-            />
+            {qrDataUrl ? (
+              <Image
+                src={qrDataUrl}
+                alt="Ticket QR"
+                className="h-64 w-64 object-contain"
+                width={256}
+                height={256}
+                priority
+                unoptimized
+              />
+            ) : (
+              <div className="h-64 w-64 flex items-center justify-center text-slate-400">QR жүктелуде...</div>
+            )}
           </div>
           <p className="text-slate-400 text-sm">Кіру үшін осы QR көрсетіңіз</p>
           <p className={`badge ${student.status === TicketStatus.ENTERED ? "bg-success/20 text-success" : "bg-error/20 text-error"}`}>
@@ -53,7 +76,7 @@ export default async function TicketPage({ params }: { params: { qrToken: string
           </p>
         </div>
 
-        <TicketActions linkUrl={linkUrl} qrDataUrl={qrDataUrl} ticketNumber={ticketNumber} />
+        {qrDataUrl && <TicketActions linkUrl={linkUrl} qrDataUrl={qrDataUrl} ticketNumber={ticketNumber} />}
       </div>
     </main>
   );

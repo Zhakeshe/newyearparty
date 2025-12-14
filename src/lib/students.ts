@@ -1,27 +1,24 @@
-import { students } from "@/data/students";
+import { students as seedStudents } from "@/data/students";
 import { TicketStatus, TicketStudent } from "./types";
 
-export function getStats() {
-  const total = students.length;
-  const entered = students.filter((s) => s.status === TicketStatus.ENTERED).length;
-  const notEntered = total - entered;
-  return { total, entered, notEntered };
+export function formatTicketNumber(value: number) {
+  return `№${value.toString().padStart(3, "0")}`;
 }
+
+export function generateQrToken(fullName: string, ticketNumber: number) {
+  const normalized = fullName
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-ZА-Я0-9]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `JOO-${formatTicketNumber(ticketNumber).replace("№", "")}-${normalized || ticketNumber}`.toUpperCase();
+}
+
+const apiStudents: TicketStudent[] = structuredClone(seedStudents);
 
 export function getStudentByToken(token: string): TicketStudent | undefined {
-  return students.find((s) => s.qrToken.toLowerCase() === token.toLowerCase());
-}
-
-export function listStudents(): TicketStudent[] {
-  return students;
-}
-
-export function listEntered(): TicketStudent[] {
-  return students.filter((s) => s.status === TicketStatus.ENTERED);
-}
-
-export function listByCurator(curator: string): TicketStudent[] {
-  return students.filter((s) => s.curator.toLowerCase() === curator.toLowerCase());
+  return apiStudents.find((s) => s.qrToken.toLowerCase() === token.toLowerCase());
 }
 
 export function markEntered(token: string): { student?: TicketStudent; error?: string } {
@@ -35,8 +32,4 @@ export function markEntered(token: string): { student?: TicketStudent; error?: s
   student.status = TicketStatus.ENTERED;
   student.enteredAt = new Date().toISOString();
   return { student };
-}
-
-export function formatTicketNumber(value: number) {
-  return `№${value.toString().padStart(3, "0")}`;
 }
