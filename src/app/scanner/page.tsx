@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { CheckCircle2, QrCode, Video, VideoOff, XCircle } from "lucide-react";
 import { QRCamera } from "@/components/qr-camera";
+import { useStudentStore } from "@/components/student-provider";
 
 type ScanResult = { status: "idle" | "valid" | "invalid"; message?: string; meta?: any };
 
@@ -10,21 +11,21 @@ export default function ScannerPage() {
   const [token, setToken] = useState("");
   const [result, setResult] = useState<ScanResult>({ status: "idle" });
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const { markEntered } = useStudentStore();
 
   const submit = useCallback(
     async (value?: string) => {
       const qrToken = value ?? token;
       if (!qrToken) return;
 
-      const res = await fetch("/api/check-in", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrToken })
-      });
-      const data = await res.json();
-      setResult(data);
+      const response = markEntered(qrToken);
+      if (response.error) {
+        setResult({ status: "invalid", message: response.error });
+      } else if (response.student) {
+        setResult({ status: "valid", meta: response.student });
+      }
     },
-    [token]
+    [markEntered, token]
   );
 
   const handleDetected = useCallback(

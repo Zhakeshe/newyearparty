@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, LockKeyhole, ShieldCheck } from "lucide-react";
-import { getStats } from "@/lib/students";
+import { ArrowRight, BadgeCheck, LockKeyhole, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { useStudentStore } from "@/components/student-provider";
+import { formatTicketNumber } from "@/lib/students";
+import { TicketStatus } from "@/lib/types";
 
 const initialCurators = [
   { id: "c1", name: "Меруерт", login: "meruert", password: "curator123" },
@@ -10,11 +12,15 @@ const initialCurators = [
 ];
 
 export default function AdminPage() {
-  const stats = getStats();
+  const { students, stats, addStudent, updateStudent, deleteStudent } = useStudentStore();
   const [curators, setCurators] = useState(initialCurators);
   const [name, setName] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formClass, setFormClass] = useState("");
+  const [formCurator, setFormCurator] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const totalCurators = useMemo(() => curators.length, [curators]);
 
@@ -24,6 +30,28 @@ export default function AdminPage() {
     setName("");
     setLogin("");
     setPassword("");
+  };
+
+  const submitStudent = () => {
+    if (editingId) {
+      updateStudent(editingId, { fullName: formName, className: formClass, curator: formCurator });
+      setEditingId(null);
+    } else {
+      const created = addStudent({ fullName: formName, className: formClass, curator: formCurator });
+      if (!created) return;
+    }
+    setFormName("");
+    setFormClass("");
+    setFormCurator("");
+  };
+
+  const startEdit = (id: string) => {
+    const student = students.find((s) => s.id === id);
+    if (!student) return;
+    setEditingId(id);
+    setFormName(student.fullName);
+    setFormClass(student.className);
+    setFormCurator(student.curator);
   };
 
   return (
@@ -109,6 +137,99 @@ export default function AdminPage() {
                   <td className="px-4 py-3 font-semibold">{curator.name}</td>
                   <td className="px-4 py-3 font-mono text-primary">{curator.login}</td>
                   <td className="px-4 py-3 font-mono text-slate-200">{curator.password}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="glass-panel rounded-3xl p-6 border border-white/10 space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-sm text-slate-400">Оқушы тізімі</p>
+            <h2 className="text-xl font-heading font-semibold">Қосу / өзгерту / өшіру</h2>
+          </div>
+          <span className="badge bg-success/20 text-success border border-success/30">Live demo — state сақталады</span>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-3">
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="ФИО"
+          />
+          <input
+            value={formClass}
+            onChange={(e) => setFormClass(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="Сынып (мыс: 11A)"
+          />
+          <div className="flex gap-2">
+            <input
+              value={formCurator}
+              onChange={(e) => setFormCurator(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Куратор аты"
+            />
+            <button
+              onClick={submitStudent}
+              className="rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+            >
+              {editingId ? "Сақтау" : "Қосу"}
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left">
+            <thead className="bg-white/5 text-sm uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3">Ticket №</th>
+                <th className="px-4 py-3">ФИО</th>
+                <th className="px-4 py-3">Сынып</th>
+                <th className="px-4 py-3">Куратор</th>
+                <th className="px-4 py-3">Статус</th>
+                <th className="px-4 py-3 text-right">Әрекет</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {students.map((student) => (
+                <tr key={student.id} className="hover:bg-white/5 transition">
+                  <td className="px-4 py-3 font-mono text-primary">{formatTicketNumber(student.ticketNumber)}</td>
+                  <td className="px-4 py-3 font-semibold">{student.fullName}</td>
+                  <td className="px-4 py-3 text-sm">{student.className}</td>
+                  <td className="px-4 py-3 text-sm text-slate-300">{student.curator}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`badge ${
+                        student.status === TicketStatus.ENTERED
+                          ? "bg-success/20 text-success border border-success/30"
+                          : "bg-error/20 text-error border border-error/30"
+                      }`}
+                    >
+                      {student.status === TicketStatus.ENTERED ? "Кірген" : "Кірмеген"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
+                        onClick={() => startEdit(student.id)}
+                        title="Өңдеу"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
+                        onClick={() => deleteStudent(student.id)}
+                        title="Өшіру"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
