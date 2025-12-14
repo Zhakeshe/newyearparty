@@ -1,36 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, LockKeyhole, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowRight, BadgeCheck, LockKeyhole, LogOut, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { useStudentStore } from "@/components/student-provider";
 import { formatTicketNumber } from "@/lib/students";
 import { TicketStatus } from "@/lib/types";
-
-const initialCurators = [
-  { id: "c1", name: "Меруерт", login: "meruert", password: "curator123" },
-  { id: "c2", name: "Айбек", login: "aibek", password: "curator456" }
-];
+import { useAuth } from "@/components/auth-provider";
 
 export default function AdminPage() {
   const { students, stats, addStudent, updateStudent, deleteStudent } = useStudentStore();
-  const [curators, setCurators] = useState(initialCurators);
+  const { user, loginAdmin, logout, curators, addCurator, updateCurator, deleteCurator } = useAuth();
   const [name, setName] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [authLogin, setAuthLogin] = useState("admin");
+  const [authPassword, setAuthPassword] = useState("admin");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [curatorEditId, setCuratorEditId] = useState<string | null>(null);
+  const [curatorEditLogin, setCuratorEditLogin] = useState("");
+  const [curatorEditPassword, setCuratorEditPassword] = useState("");
   const [formName, setFormName] = useState("");
   const [formClass, setFormClass] = useState("");
   const [formCurator, setFormCurator] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const totalCurators = useMemo(() => curators.length, [curators]);
-
-  const addCurator = () => {
-    if (!name || !login || !password) return;
-    setCurators((prev) => [...prev, { id: crypto.randomUUID(), name, login, password }]);
-    setName("");
-    setLogin("");
-    setPassword("");
-  };
 
   const submitStudent = () => {
     if (editingId) {
@@ -54,6 +48,61 @@ export default function AdminPage() {
     setFormCurator(student.curator);
   };
 
+  const startCuratorEdit = (id: string) => {
+    const curator = curators.find((c) => c.id === id);
+    if (!curator) return;
+    setCuratorEditId(id);
+    setCuratorEditLogin(curator.login);
+    setCuratorEditPassword(curator.password);
+  };
+
+  const saveCuratorEdit = () => {
+    if (!curatorEditId) return;
+    updateCurator(curatorEditId, { login: curatorEditLogin, password: curatorEditPassword });
+    setCuratorEditId(null);
+    setCuratorEditLogin("");
+    setCuratorEditPassword("");
+  };
+
+  const handleLogin = () => {
+    const ok = loginAdmin(authLogin, authPassword);
+    setAuthError(ok ? null : "Логин немесе пароль қате");
+  };
+
+  if (!user || user.role !== "ADMIN") {
+    return (
+      <main className="px-6 py-16 md:px-10 flex justify-center">
+        <div className="glass-panel rounded-3xl p-8 max-w-md w-full space-y-4 border border-white/10">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Admin login</p>
+          <h1 className="text-3xl font-heading font-semibold">Админге кіру</h1>
+          <div className="space-y-3">
+            <input
+              value={authLogin}
+              onChange={(e) => setAuthLogin(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Логин"
+            />
+            <input
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Пароль"
+              type="password"
+            />
+            <button
+              onClick={handleLogin}
+              className="w-full rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+            >
+              Кіру
+            </button>
+            {authError && <p className="text-error text-sm text-center">{authError}</p>}
+            <p className="text-xs text-center text-slate-400">Default: admin / admin</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="px-6 py-10 md:px-10 space-y-8 max-w-6xl mx-auto">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -61,6 +110,12 @@ export default function AdminPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Admin panel</p>
           <h1 className="text-3xl font-heading font-semibold">Куратор аккаунттарын басқару</h1>
           <p className="text-slate-400 text-sm">Логин/пароль беріп, сканер мен студенттерді бақылаңыз</p>
+        </div>
+        <div className="flex items-center gap-3 text-sm text-slate-300">
+          <span className="badge bg-primary/20 text-primary border border-primary/30">{user.name}</span>
+          <button onClick={logout} className="inline-flex items-center gap-2 hover:text-white">
+            <LogOut size={16} /> Шығу
+          </button>
         </div>
       </header>
 
@@ -89,7 +144,10 @@ export default function AdminPage() {
             <p className="text-sm text-slate-400">Жаңа куратор</p>
             <h2 className="text-xl font-heading font-semibold">Логин + пароль жасау</h2>
           </div>
-          <span className="badge bg-primary/20 text-primary border border-primary/30">Тек демо UI</span>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="badge bg-primary/20 text-primary border border-primary/30">Admin: {user.name}</span>
+            <span className="text-slate-400">Default admin: admin / admin</span>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">
@@ -114,7 +172,12 @@ export default function AdminPage() {
               type="text"
             />
             <button
-              onClick={addCurator}
+              onClick={() => {
+                addCurator({ name, login, password });
+                setName("");
+                setLogin("");
+                setPassword("");
+              }}
               className="rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
             >
               Қосу
@@ -129,14 +192,62 @@ export default function AdminPage() {
                 <th className="px-4 py-3">Аты</th>
                 <th className="px-4 py-3">Логин</th>
                 <th className="px-4 py-3">Пароль</th>
+                <th className="px-4 py-3 text-right">Әрекет</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {curators.map((curator) => (
                 <tr key={curator.id} className="hover:bg-white/5 transition">
                   <td className="px-4 py-3 font-semibold">{curator.name}</td>
-                  <td className="px-4 py-3 font-mono text-primary">{curator.login}</td>
-                  <td className="px-4 py-3 font-mono text-slate-200">{curator.password}</td>
+                  <td className="px-4 py-3 font-mono text-primary">
+                    {curatorEditId === curator.id ? (
+                      <input
+                        className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 w-full"
+                        value={curatorEditLogin}
+                        onChange={(e) => setCuratorEditLogin(e.target.value)}
+                      />
+                    ) : (
+                      curator.login
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-slate-200">
+                    {curatorEditId === curator.id ? (
+                      <input
+                        className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 w-full"
+                        value={curatorEditPassword}
+                        onChange={(e) => setCuratorEditPassword(e.target.value)}
+                        type="text"
+                      />
+                    ) : (
+                      curator.password
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      {curatorEditId === curator.id ? (
+                        <button
+                          className="p-2 rounded-lg bg-success/20 text-success border border-success/30"
+                          onClick={saveCuratorEdit}
+                        >
+                          Сақтау
+                        </button>
+                      ) : (
+                        <button
+                          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
+                          onClick={() => startCuratorEdit(curator.id)}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      )}
+                      <button
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
+                        onClick={() => deleteCurator(curator.id)}
+                        title="Өшіру"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

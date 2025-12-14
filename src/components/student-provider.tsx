@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { students as seedStudents } from "@/data/students";
 import { formatTicketNumber, generateQrToken } from "@/lib/students";
+import { safeRandomId } from "@/lib/utils";
 import { TicketStatus, TicketStudent } from "@/lib/types";
 
 type AddInput = { fullName: string; className: string; curator: string };
@@ -64,7 +65,7 @@ export function StudentProvider({ children }: { children: React.ReactNode }) {
     const nextNumber = (students.reduce((max, s) => Math.max(max, s.ticketNumber), 0) ?? 0) + 1;
     const qrToken = generateQrToken(fullName, nextNumber);
     const newStudent: TicketStudent = {
-      id: crypto.randomUUID(),
+      id: safeRandomId("student"),
       fullName,
       className,
       curator,
