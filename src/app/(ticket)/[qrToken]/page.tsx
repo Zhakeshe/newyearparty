@@ -1,8 +1,9 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getStudentByToken, formatTicketNumber } from "@/lib/students";
 import { TicketStatus } from "@/lib/types";
-import { Share2, Link as LinkIcon, Download } from "lucide-react";
+import { TicketActions } from "@/components/ticket-actions";
 
 async function generateQrDataUrl(token: string) {
   const url = `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://example.com"}/ticket/${token}`;
@@ -36,7 +37,15 @@ export default async function TicketPage({ params }: { params: { qrToken: string
 
         <div className="flex flex-col items-center gap-3">
           <div className="bg-white rounded-2xl p-4 shadow-xl">
-            <img src={qrDataUrl} alt="Ticket QR" className="h-64 w-64 object-contain" />
+            <Image
+              src={qrDataUrl}
+              alt="Ticket QR"
+              className="h-64 w-64 object-contain"
+              width={256}
+              height={256}
+              priority
+              unoptimized
+            />
           </div>
           <p className="text-slate-400 text-sm">Кіру үшін осы QR көрсетіңіз</p>
           <p className={`badge ${student.status === TicketStatus.ENTERED ? "bg-success/20 text-success" : "bg-error/20 text-error"}`}>
@@ -44,27 +53,7 @@ export default async function TicketPage({ params }: { params: { qrToken: string
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            className="flex items-center justify-center gap-2 rounded-xl bg-primary text-white py-3 hover:shadow-glow"
-            onClick={() => navigator.share?.({ title: "JOO Ticket", url: linkUrl })}
-          >
-            <Share2 size={16} /> Share
-          </button>
-          <button
-            className="flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/10 py-3"
-            onClick={async () => navigator.clipboard.writeText(linkUrl)}
-          >
-            <LinkIcon size={16} /> Copy link
-          </button>
-          <a
-            className="flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/10 py-3"
-            href={qrDataUrl}
-            download={`ticket-${ticketNumber}.png`}
-          >
-            <Download size={16} /> Download QR
-          </a>
-        </div>
+        <TicketActions linkUrl={linkUrl} qrDataUrl={qrDataUrl} ticketNumber={ticketNumber} />
       </div>
     </main>
   );
