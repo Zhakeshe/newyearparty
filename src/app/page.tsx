@@ -1,12 +1,12 @@
-import { ArrowRight, Gauge, QrCode, Ticket } from "lucide-react";
+import { ArrowRight, Gauge, KeyRound, LayoutDashboard, QrCode, Ticket } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getStats, listStudents } from "@/lib/students";
+import { getStats, listEntered } from "@/lib/students";
 import { StudentTable } from "@/components/StudentTable";
 
 export default function Home() {
   const stats = getStats();
-  const students = listStudents();
+  const students = listEntered();
 
   return (
     <main className="px-6 py-10 md:px-10 space-y-8">
@@ -61,21 +61,18 @@ export default function Home() {
       <section className="glass-panel rounded-3xl p-6 border border-white/10 space-y-4">
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div>
-            <p className="text-sm text-slate-400">Tickets table</p>
-            <h2 className="text-2xl font-heading font-semibold">Students</h2>
+            <p className="text-sm text-slate-400">Live check-in</p>
+            <h2 className="text-2xl font-heading font-semibold">Кіргендер тізімі</h2>
           </div>
           <div className="flex gap-2 text-sm text-slate-400">
             <span className="badge bg-success/10 text-success border border-success/20">
-              Кірген: {stats.entered}
-            </span>
-            <span className="badge bg-error/10 text-error border border-error/20">
-              Кірмеген: {stats.notEntered}
+              Барлығы кіргендер: {stats.entered}
             </span>
           </div>
         </div>
         <StudentTable students={students} />
         <div className="text-sm text-slate-400 flex items-center gap-2">
-          <ArrowRight size={14} /> QR және ссылка батырмаларын пайдаланып бөлісіңіз
+          <ArrowRight size={14} /> Қалған оқушылар админ/куратор панельде басқарылады
         </div>
       </section>
 
@@ -104,8 +101,37 @@ export default function Home() {
             <p>Demo link:</p>
             <p className="font-mono text-primary">/ticket/JOO-001-AYDANA</p>
             <p className="font-mono text-primary">/scanner</p>
+            <p className="font-mono text-primary">/admin</p>
+            <p className="font-mono text-primary">/curator</p>
           </div>
         </div>
+      </section>
+
+      <section className="grid md:grid-cols-2 gap-4">
+        <Link
+          href="/admin"
+          className="glass-panel rounded-2xl p-6 border border-white/10 flex items-center gap-3 hover:shadow-glow"
+        >
+          <div className="h-12 w-12 rounded-xl bg-primary/30 flex items-center justify-center">
+            <LayoutDashboard />
+          </div>
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Админ панель</p>
+            <p className="font-semibold">Куратор аккаунттарын ашу және жалпы статистика</p>
+          </div>
+        </Link>
+        <Link
+          href="/curator"
+          className="glass-panel rounded-2xl p-6 border border-white/10 flex items-center gap-3 hover:shadow-glow"
+        >
+          <div className="h-12 w-12 rounded-xl bg-success/30 flex items-center justify-center">
+            <KeyRound />
+          </div>
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Куратор панель</p>
+            <p className="font-semibold">Өз оқушыларын көру, билетпен бөлісу</p>
+          </div>
+        </Link>
       </section>
     </main>
   );

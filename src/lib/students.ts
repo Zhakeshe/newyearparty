@@ -16,6 +16,14 @@ export function listStudents(): TicketStudent[] {
   return students;
 }
 
+export function listEntered(): TicketStudent[] {
+  return students.filter((s) => s.status === TicketStatus.ENTERED);
+}
+
+export function listByCurator(curator: string): TicketStudent[] {
+  return students.filter((s) => s.curator.toLowerCase() === curator.toLowerCase());
+}
+
 export function markEntered(token: string): { student?: TicketStudent; error?: string } {
   const student = getStudentByToken(token);
   if (!student) {
