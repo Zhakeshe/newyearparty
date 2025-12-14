@@ -1,0 +1,200 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Copy, Link as LinkIcon, LogOut, Pencil, Share2, Trash2, Users } from "lucide-react";
+import { formatTicketNumber } from "@/lib/students";
+import { TicketStatus, TicketStudent } from "@/lib/types";
+import { useStudentStore } from "@/components/student-provider";
+import { useAuth } from "@/components/auth-provider";
+
+export default function CuratorPage() {
+  const { students, addStudent, updateStudent, deleteStudent, shareLink } = useStudentStore();
+  const { user, loginCurator, logout, curators } = useAuth();
+  const [authLogin, setAuthLogin] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const curatorName = useMemo(() => curators.find((c) => c.login === user?.login)?.name ?? user?.name, [curators, user]);
+  const myStudents = useMemo(
+    () => students.filter((s) => curatorName && s.curator.toLowerCase() === curatorName.toLowerCase()),
+    [students, curatorName]
+  );
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formClass, setFormClass] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const copyLink = async (student: TicketStudent) => {
+    const url = shareLink(student);
+    await navigator.clipboard.writeText(url);
+    setCopiedId(student.id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const shareQr = async (student: TicketStudent) => {
+    const url = shareLink(student);
+    if (navigator.share) {
+      await navigator.share({ title: "JOO HIGH SCHOOL Ticket", url });
+    } else {
+      await navigator.clipboard.writeText(url);
+    }
+  };
+
+  const submitStudent = () => {
+    if (!curatorName) return;
+    if (editingId) {
+      updateStudent(editingId, { fullName: formName, className: formClass });
+      setEditingId(null);
+    } else {
+      const created = addStudent({ fullName: formName, className: formClass, curator: curatorName });
+      if (!created) return;
+    }
+    setFormName("");
+    setFormClass("");
+  };
+
+  const startEdit = (id: string) => {
+    const student = myStudents.find((s) => s.id === id);
+    if (!student) return;
+    setEditingId(id);
+    setFormName(student.fullName);
+    setFormClass(student.className);
+  };
+
+  const handleLogin = () => {
+    const ok = loginCurator(authLogin, authPassword);
+    setAuthError(ok ? null : "Логин немесе пароль қате");
+  };
+
+  if (!user || user.role !== "CURATOR") {
+    return (
+      <main className="px-6 py-16 md:px-10 flex justify-center">
+        <div className="glass-panel rounded-3xl p-8 max-w-md w-full space-y-4 border border-white/10">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Curator login</p>
+          <h1 className="text-3xl font-heading font-semibold">Кураторға кіру</h1>
+          <div className="space-y-3">
+            <input
+              value={authLogin}
+              onChange={(e) => setAuthLogin(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Логин"
+            />
+            <input
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 w-full"
+              placeholder="Пароль"
+              type="password"
+            />
+            <button
+              onClick={handleLogin}
+              className="w-full rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+            >
+              Кіру
+            </button>
+            {authError && <p className="text-error text-sm text-center">{authError}</p>}
+            <p className="text-xs text-center text-slate-400">Логин/пароль админ панельден беріледі</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="px-6 py-10 md:px-10 space-y-8 max-w-6xl mx-auto">
+      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Curator panel</p>
+          <h1 className="text-3xl font-heading font-semibold">{curatorName} — оқушылар</h1>
+          <p className="text-slate-400 text-sm">QR және ссылка арқылы билетпен бөлісу</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="badge bg-success/20 text-success border border-success/30 inline-flex items-center gap-2">
+            <Users size={16} /> {myStudents.length} оқушы
+          </div>
+          <button className="inline-flex items-center gap-2 text-slate-300 hover:text-white" onClick={logout}>
+            <LogOut size={16} /> Шығу
+          </button>
+        </div>
+      </header>
+
+      <div className="glass-panel rounded-3xl p-5 border border-white/10 space-y-3">
+        <p className="text-sm text-slate-400">Өз оқушыларыңызды қосыңыз</p>
+        <div className="grid md:grid-cols-3 gap-3">
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="ФИО"
+          />
+          <input
+            value={formClass}
+            onChange={(e) => setFormClass(e.target.value)}
+            className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            placeholder="Сынып"
+          />
+          <button
+            onClick={submitStudent}
+            className="rounded-xl bg-primary text-white px-4 py-3 font-semibold hover:shadow-glow"
+          >
+            {editingId ? "Сақтау" : "Қосу"}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {myStudents.map((student) => (
+          <div key={student.id} className="glass-panel rounded-2xl p-5 border border-white/10 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-primary/30 flex items-center justify-center font-heading text-lg">
+                {student.fullName.charAt(0)}
+              </div>
+              <div>
+                <p className="font-semibold text-lg">{student.fullName}</p>
+                <p className="text-slate-400 text-sm">{student.className}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-sm text-slate-300">
+              <span className="font-mono text-primary">{formatTicketNumber(student.ticketNumber)}</span>
+              <span className="badge bg-success/10 text-success border border-success/20">
+                {student.status === TicketStatus.ENTERED ? "Кірген" : "Кірмеген"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2 text-sm">
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => copyLink(student)}
+              >
+                <Copy size={16} />
+              </button>
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => shareQr(student)}
+              >
+                <Share2 size={16} />
+              </button>
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => startEdit(student.id)}
+                title="Өңдеу"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex-1"
+                onClick={() => deleteStudent(student.id)}
+                title="Өшіру"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            {copiedId === student.id && (
+              <div className="text-xs text-success text-center flex items-center gap-1 justify-center">
+                <LinkIcon size={14} /> Сілтеме көшірілді
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
