@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Eye, QrCode, Share2 } from "lucide-react";
+import { Copy, Share2 } from "lucide-react";
 import { formatTicketNumber } from "@/lib/students";
 import { TicketStatus, TicketStudent } from "@/lib/types";
 
@@ -28,13 +28,18 @@ export function StudentTable({ students }: Props) {
 
   const classes = Array.from(new Set(students.map((s) => s.className))).sort();
 
-  const copyLink = async (token: string) => {
-    const url = `${window.location.origin}/ticket/${token}`;
+  const buildShareLink = (student: TicketStudent) => {
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+    return `${base}/ticket/${student.qrToken}`;
+  };
+
+  const copyLink = async (student: TicketStudent) => {
+    const url = buildShareLink(student);
     await navigator.clipboard.writeText(url);
   };
 
-  const shareQr = async (token: string) => {
-    const url = `${window.location.origin}/ticket/${token}`;
+  const shareQr = async (student: TicketStudent) => {
+    const url = buildShareLink(student);
     if (navigator.share) {
       await navigator.share({ title: "JOO HIGH SCHOOL Ticket", url });
     } else {
@@ -99,32 +104,18 @@ export function StudentTable({ students }: Props) {
                   <div className="flex justify-end gap-2 text-sm">
                     <button
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-                      onClick={() => copyLink(student.qrToken)}
+                      onClick={() => copyLink(student)}
                       title="Copy link"
                     >
                       <Copy size={16} />
                     </button>
                     <button
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-                      onClick={() => shareQr(student.qrToken)}
+                      onClick={() => shareQr(student)}
                       title="Share QR"
                     >
                       <Share2 size={16} />
                     </button>
-                    <a
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-                      href={`/ticket/${student.qrToken}`}
-                      title="Preview ticket"
-                    >
-                      <Eye size={16} />
-                    </a>
-                    <a
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-                      href={`/ticket/${student.qrToken}`}
-                      title="QR"
-                    >
-                      <QrCode size={16} />
-                    </a>
                   </div>
                 </td>
               </tr>

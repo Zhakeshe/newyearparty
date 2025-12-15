@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import { BrowserMultiFormatReader, NotFoundException } from "@zxing/browser";
 
 type Props = {
   active: boolean;
@@ -15,7 +15,7 @@ export function QRCamera({ active, onDetected }: Props) {
 
   useEffect(() => {
     if (!active) {
-      readerRef.current = undefined;
+      readerRef.current?.reset();
       setStatus("Камера өшірулі");
       return;
     }
@@ -27,11 +27,14 @@ export function QRCamera({ active, onDetected }: Props) {
     let cancelled = false;
 
     reader
-      .decodeFromVideoDevice(undefined, videoRef.current!, (result, error) => {
+      .decodeFromVideoDevice(null, videoRef.current!, (result, error) => {
         if (cancelled) return;
         if (result) {
           setStatus("QR табылды");
           onDetected(result.getText());
+        }
+        if (error && !(error instanceof NotFoundException)) {
+          setStatus("Қате: " + error.message);
         }
       })
       .catch((err) => {
@@ -40,6 +43,7 @@ export function QRCamera({ active, onDetected }: Props) {
 
     return () => {
       cancelled = true;
+      reader.reset();
     };
   }, [active, onDetected]);
 

@@ -13,3 +13,13 @@ export type TicketStudent = {
   curator: string;
   enteredAt?: string;
 };
+
+export type SharedStudentPayload = {
+  fullName: string;
+  className: string;
+  ticketNumber: number;
+  qrToken: string;
+  curator: string;
+  status?: TicketStatus;
+  enteredAt?: string;
+};

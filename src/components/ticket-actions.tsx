@@ -6,9 +6,10 @@ interface TicketActionsProps {
   linkUrl: string;
   qrDataUrl: string;
   ticketNumber: string;
+  compact?: boolean;
 }
 
-export function TicketActions({ linkUrl, qrDataUrl, ticketNumber }: TicketActionsProps) {
+export function TicketActions({ linkUrl, qrDataUrl, ticketNumber, compact }: TicketActionsProps) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -26,8 +27,10 @@ export function TicketActions({ linkUrl, qrDataUrl, ticketNumber }: TicketAction
     await navigator.clipboard.writeText(linkUrl);
   };
 
+  const className = compact ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 sm:grid-cols-3 gap-3";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className={className}>
       <button
         className="flex items-center justify-center gap-2 rounded-xl bg-primary text-white py-3 hover:shadow-glow"
         onClick={handleShare}
