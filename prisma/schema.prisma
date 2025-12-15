@@ -1,0 +1,72 @@
+// Prisma schema for production-ready ticket system
+// Update DATABASE_URL in your environment to point to PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CURATOR
+  SCANNER
+}
+
+enum TicketStatus {
+  NOT_ENTERED
+  ENTERED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  login        String        @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime      @default(now())
+
+  students     Student[]
+  scanLogs     CheckInLog[]  @relation("ScannerLogs")
+}
+
+model Student {
+  id        String   @id @default(uuid())
+  fullName  String
+  className String
+  curatorId String
+  curator   User     @relation(fields: [curatorId], references: [id])
+
+  ticket    Ticket?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ticket {
+  id           String        @id @default(uuid())
+  qrToken      String        @unique
+  ticketNumber Int           @unique
+  status       TicketStatus  @default(NOT_ENTERED)
+
+  studentId    String        @unique
+  student      Student       @relation(fields: [studentId], references: [id])
+
+  createdAt    DateTime      @default(now())
+  enteredAt    DateTime?
+
+  checkIns     CheckInLog[]
+}
+
+model CheckInLog {
+  id         String   @id @default(uuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  scannerId  String?
+  scanner    User?    @relation("ScannerLogs", fields: [scannerId], references: [id])
+  result     String
+  scannedAt  DateTime @default(now())
+}

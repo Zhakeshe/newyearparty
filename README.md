@@ -1,497 +1,59 @@
-# newyearparty
-🔹 FULL SYSTEM PROMPT
+# JOO HIGH SCHOOL – NEW YEAR PARTY 2026
 
-Сен – senior full-stack developer.
-Міндетің: JOO HIGH SCHOOL NEW YEAR PARTY 2026 іс-шарасына арналған
-электрон билет + QR арқылы кіру жүйесін жасау.
+Premium dark-mode билет жүйесі: QR билеттер, Curator share, Admin dashboard, Scanner check-in.
 
-👉 Төлем: қолма-қол (нал)
-👉 Билет: электронный (QR + ссылка + фото)
+## Stack
+- Next.js App Router (TypeScript)
+- Tailwind CSS (glassmorphism, dark default)
+- Prisma schema for PostgreSQL (Role-based users)
+- Framer Motion, lucide-react icons
+- QR generation via [`qrcode`](https://github.com/soldair/node-qrcode)
 
-🎯 НЕГІЗГІ СЦЕНАРИЙ
+## Құрылым
+- `/` — Admin/Curator стиліндегі дашборд (кесте, фильтр, статистика)
+- `/ticket/[qrToken]` — Public билет беті, үлкен QR + share / copy / download
+- `/scanner` — Scanner рөліне арналған жеңіл check-in экраны
+- `/api/check-in` — Demo check-in API (in-memory list)
+- `prisma/schema.prisma` — Рөлдер мен студенттер кестесі
 
-Оқушы нал ақша береді.
+## Жылдам бастау
+1. `npm install` (registry қолжетімді болмағанда lock файл жоқ, сондықтан онлайн болу керек)
+2. `.env` ішінде `DATABASE_URL` көрсету (PostgreSQL)
+3. `npm run dev` → http://localhost:3000
 
-Куратор админ панель арқылы оқушыны тіркейді.
+> Demo деректер `src/data/students.ts` ішінде. Scanner бетінде qrToken ретінде сол мәндерді қолданыңыз.
 
-Система автоматты түрде:
+## PostgreSQL + Prisma толық орнату
+Prisma v5 (repo-да бекітілген) қолданады. Егер npx арқылы v7 орнатсаңыз, `datasource url` қателігін аласыз. Сондықтан алдымен жобадағы тәуелділіктерді орнатыңыз немесе тікелей `npx prisma@5.19.1 ...` командасын пайдаланыңыз.
 
-реттік номер (№001…)
+1. **Дерекқорды дайындау**
+   - Жергілікті PostgreSQL: `docker run --name newyearparty-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=newyearparty -p 5432:5432 -d postgres:16`
+   - Немесе кез келген дайын PostgreSQL instance қолданыңыз.
 
-уникальный qrToken
+2. **.env құру**
+   - `.env.example` файлын көшіріңіз: `cp .env.example .env`
+   - `DATABASE_URL` мәнін өз дерекқорыңызға сәйкестендіріңіз (формат: `postgresql://USER:PASSWORD@HOST:PORT/DB?schema=public`).
 
-электрон билет
+3. **Тәуелділіктерді орнату (Prisma v5 алу үшін)**
+   - `npm install`
+   - Егер желі болмай қалса және `npx prisma migrate dev` v7 сұраса, нұсқаны күштеп көрсетіңіз: `npx prisma@5.19.1 migrate dev --name init --schema prisma/schema.prisma`
 
-Куратор:
+4. **Миграция және клиент генерациясы**
+   - `npx prisma migrate dev --name init` — кестелерді құрады
+   - `npx prisma generate` — Prisma Client шығарады
 
-билет ссылкасын
+5. **Тексеру / деректер көру** (қалауыңыз бойынша)
+   - `npx prisma studio` — кестелерді браузерде көру
 
-QR суретін
-оқушыға Telegram / WhatsApp арқылы бөліседі.
+6. **Қосымшаны іске қосу**
+   - `npm run dev` және http://localhost:3000 адресіне кіріңіз
 
-Оқушы ссылкамен кіріп, билет + QR көрсетеді.
+> Пайдалы: басқа Prisma нұсқасын қолданғыңыз келсе, жаңа конфигурация (Prisma 7) үшін `prisma.config.ts` пайдаланып datasource URL беру керек. Осы репо ішінде v5 қолданылады, сондықтан жоғарыдағы командаларды сақтаңыз.
 
-Іс-шара күні QR скан арқылы кіреді.
+## Design highlights
+- Primary `#4F46E5`, Secondary `#9333EA`, Success `#22C55E`, Error `#EF4444`
+- Glass cards, hover glow, badge стилі
+- Mobile-first layout
 
-👤 РӨЛДЕР
-ADMIN
-
-Барлық оқушылар
-
-Куратор / сканер басқару
-
-Статистика
-
-CURATOR
-
-Тек өзі тіркеген оқушылар
-
-Оқушы қосу / өзгерту / өшіру
-
-Билет ссылкасын көшіру және QR-ды бөлісу
-
-SCANNER
-
-Тек QR тексеру экраны
-
-Басқа меню жоқ
-
-🧭 АДМИН ПАНЕЛЬ МЕНЮ
-Dashboard
-
-Барлық билет саны
-
-Кіргендер
-
-Кірмегендер
-
-Students
-
-Кесте:
-
-Ticket №
-
-ФИО
-
-Сынып
-
-Куратор
-
-Статус (✅ / ❌)
-
-🔗 билет ссылка
-
-✏️ өңдеу
-
-🗑️ өшіру
-
-Фильтр:
-
-сынып
-
-куратор
-
-кірген / кірмеген
-
-QR CHECK-IN
-
-Камерамен QR скан
-
-Нәтиже:
-
-✅ ДҰРЫС
-
-ФИО
-
-Сынып
-
-Ticket №
-
-Жасыл галочка + анимация
-
-❌ ҚАТЕ
-
-жоқ билет
-
-немесе уже кірген
-
-Бір QR → 1 рет
-
-2–3 адам параллель тексере алады
-
-Келмегендер
-
-Автоматты список
-
-ФИО
-
-Сынып
-
-Куратор
-
-🎟️ ОҚУШЫ БИЛЕТ БЕТІ (PUBLIC)
-
-URL: /ticket/{qrToken}
-
-Көрінеді:
-
-🎄 JOO HIGH SCHOOL
-
-NEW YEAR PARTY 2026
-
-ФИО
-
-Сынып
-
-Ticket №
-
-ҮЛКЕН QR-КОД
-
-“Осы QR-кодты кіргенде көрсетіңіз”
-
-🎨 UI / UX DESIGN REQUIREMENTS
-Жалпы стиль
-
-Premium, modern, clean
-
-Dark mode default
-
-Mobile-first
-
-Түстер
-
-Primary: #4F46E5
-
-Success: #22C55E
-
-Error: #EF4444
-
-Background: #0F172A
-
-🎟️ Ticket UI
-
-Glassmorphism card
-
-QR ақ фонда, rounded
-
-Screenshot-қа әдемі
-
-Батырмалар:
-
-Share Telegram
-
-Share WhatsApp
-
-Download QR (PNG)
-
-📲 Curator UI
-
-Student card:
-
-ФИО
-
-Сынып
-
-Ticket №
-
-Батырмалар:
-
-🔗 Copy link
-
-📤 Share QR
-
-🖼️ Preview QR
-
-📷 QR Scan UI
-
-Fullscreen камера
-
-Анимация рамка
-
-Жасыл / қызыл flash
-
-Үлкен галочка ❌ / ✅
-
-🧱 TECH STACK
-
-Next.js (App Router)
-
-Node.js API Routes
-
-PostgreSQL
-
-Prisma ORM
-
-Auth: role-based session
-
-UI: Tailwind + shadcn/ui
-
-Animation: Framer Motion
-
-QR: qrcode
-
-🗄️ PRISMA SCHEMA
-model User {
-  id        String   @id @default(uuid())
-  name      String
-  role      Role
-  createdAt DateTime @default(now())
-
-  students  Student[]
-}
-
-model Student {
-  id           String        @id @default(uuid())
-  fullName     String
-  className    String
-  ticketNumber Int           @unique
-  qrToken      String        @unique
-  status       TicketStatus  @default(NOT_ENTERED)
-
-  curatorId    String
-  curator      User          @relation(fields: [curatorId], references: [id])
-
-  createdAt    DateTime      @default(now())
-  enteredAt    DateTime?
-}
-
-enum Role {
-  ADMIN
-  CURATOR
-  SCANNER
-}
-
-enum TicketStatus {
-  NOT_ENTERED
-  ENTERED
-}
-
-🔐 SECURITY
-
-QR ішінде тек qrToken
-
-Бір рет қолдану
-
-Повтор скан → ❌
-
-Role-based access
-
-✅ НӘТИЖЕ
-
-Нал төлем
-
-Әдемі электрон билет
-
-QR + ссылка + фото
-
-Куратор билет бөлісе алады
-
-Админ панель толық
-
-Келмегендер автоматты
-
-🌌 BRANDING
-
-Event name: JOO HIGH SCHOOL – NEW YEAR PARTY 2026
-
-Tone: premium school event, modern, clean
-
-Балаша емес, “студенттік / high-class” vibe
-
-🎨 COLOR SYSTEM
-
-Primary: #4F46E5 (Indigo)
-
-Secondary: #9333EA (Purple accent)
-
-Success: #22C55E
-
-Error: #EF4444
-
-Background dark: #0B1220
-
-Card background: rgba(255,255,255,0.08) (glass)
-
-🔤 TYPOGRAPHY
-
-Headings: Inter / Poppins
-
-Body: Inter
-
-Ticket number & QR label: monospace style
-
-Үлкен, оқуға оңай
-
-🎟️ STUDENT TICKET PAGE (PUBLIC LINK UI)
-
-Goal: QR-ды бөліскенде “вау” эффект, ұят емес.
-
-Layout:
-
-Fullscreen dark gradient background
-
-Centered Glass Card
-
-Soft blur + shadow
-
-Card ішінде:
-
-🏫 JOO HIGH SCHOOL
-
-🎄 NEW YEAR PARTY 2026
-
-Divider (thin line)
-
-Student info block:
-
-ФИО (bold, үлкен)
-
-Сынып (badge)
-
-Ticket № (gradient badge)
-
-QR block:
-
-ҮЛКЕН QR (min 260×260)
-
-Ақ фон, rounded
-
-QR астында:
-
-“Кіру үшін осы QR көрсетіңіз”
-
-Actions:
-
-📤 Share (Telegram / WhatsApp)
-
-🖼️ Download QR (PNG)
-
-🔗 Copy ticket link
-
-QR + текст скриншотқа әдемі түсуі керек
-
-📲 CURATOR PANEL DESIGN
-Student Card:
-
-Rounded card
-
-Left: avatar (инициалдар)
-
-Right:
-
-ФИО
-
-Сынып
-
-Ticket №
-
-Action buttons (icon-only):
-
-🔗 Copy link
-
-📤 Share QR
-
-👁️ Preview ticket
-
-UX:
-
-1 кликте QR сурет + текст дайын болып ашылады
-
-Telegram / WhatsApp share API қолдану
-
-📷 QR CHECK-IN SCREEN DESIGN
-Scanner UI:
-
-Fullscreen camera
-
-Center scan frame (animated border)
-
-“Scan QR to enter” текст
-
-Result animation:
-✅ VALID
-
-Screen flash: green
-
-Big animated ✔
-
-Text:
-
-“ACCESS GRANTED”
-
-ФИО
-
-Сынып
-
-Ticket №
-
-❌ INVALID
-
-Red flash
-
-❌ icon
-
-“INVALID / ALREADY USED”
-
-Анимация 1–1.5 сек, тез
-
-🧭 ADMIN PANEL UI
-Sidebar:
-
-Dark glass sidebar
-
-Icons + text
-
-Active menu glow
-
-Tables:
-
-Sticky header
-
-Status chip:
-
-🟢 ENTERED
-
-🔴 NOT ENTERED
-
-Hover effect
-
-Stats cards:
-
-Total tickets
-
-Entered
-
-Not entered
-
-✨ MICRO-INTERACTIONS
-
-Hover glow
-
-Button press scale
-
-Smooth page transitions
-
-Framer Motion қолдану
-
-🛠️ UI STACK
-
-Tailwind CSS
-
-shadcn/ui
-
-Framer Motion
-
-Lucide icons
-
-next-themes (dark default)
-
-🎯 FINAL DESIGN GOAL
-
-QR жібергенде “арзан” көрінбейді
-
-Оқушы мақтанып көрсетеді
-
-Кіруде тексеру жылдам + әдемі
-
-Мектеп деңгейінен жоғары сапа
+## Security note
+QR ішінде тек `qrToken`. Check-in API бір рет қана белгілейді (in-memory demo).
